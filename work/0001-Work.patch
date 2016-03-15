@@ -1,0 +1,653 @@
+From be85e6b7e1b28321ed151cd424155a8ad059aeef Mon Sep 17 00:00:00 2001
+From: datasedai <datasedai@gmail.com>
+Date: Mon, 14 Mar 2016 19:56:55 -0400
+Subject: [PATCH] Work
+
+---
+ .../core/cli/annotations/GeowaveCommand.java       |  13 ++
+ .../cli/annotations/GeowaveCommandSection.java     |  13 ++
+ .../core/cli/annotations/GeowavePlugin.java        |  12 ++
+ .../core/cli/annotations/GeowavePluginFactory.java |  12 ++
+ .../core/cli/annotations/PluginParameter.java      |  12 ++
+ .../core/cli/annotations/PrefixParameter.java      |  12 ++
+ .../mil/nga/giat/geowave/core/cli/api/Command.java |   5 +
+ .../giat/geowave/core/cli/api/PluginFactory.java   |   5 +
+ .../mil/nga/giat/geowave/core/cli/api/Section.java |   5 +
+ .../geowave/core/cli/example/ExampleCommand.java   |  19 ++
+ .../core/cli/example/ExamplePluginFactory.java     |  61 ++++++
+ .../geowave/core/cli/example/ExampleSection.java   |  30 +++
+ .../nga/giat/geowave/core/cli/example/Main.java    | 216 +++++++++++++++++++++
+ .../geowave/core/cli/spi/OperationRegistry.java    |   5 +
+ .../giat/geowave/core/cli/spi/PluginParser.java    |   5 +
+ .../giat/geowave/core/cli/spi/PluginRegistry.java  |  63 ++++++
+ .../core/something/CommandLineProcessor.java       |   5 +
+ .../geowave/core/something/OptionResolver.java     |   5 +
+ 18 files changed, 498 insertions(+)
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommand.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommandSection.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePlugin.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePluginFactory.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PluginParameter.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PrefixParameter.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Command.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/PluginFactory.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Section.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleCommand.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExamplePluginFactory.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleSection.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/Main.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/OperationRegistry.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginParser.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginRegistry.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/something/CommandLineProcessor.java
+ create mode 100644 core/cli/src/main/java/mil/nga/giat/geowave/core/something/OptionResolver.java
+
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommand.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommand.java
+new file mode 100644
+index 0000000..afc6770
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommand.java
+@@ -0,0 +1,13 @@
++package mil.nga.giat.geowave.core.cli.annotations;
++
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.lang.annotation.Target;
++
++@Retention(RetentionPolicy.RUNTIME)
++@Target({ ElementType.TYPE })
++public @interface GeowaveCommand {
++	String name();
++	String parentSection() default "";
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommandSection.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommandSection.java
+new file mode 100644
+index 0000000..3acdcde
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowaveCommandSection.java
+@@ -0,0 +1,13 @@
++package mil.nga.giat.geowave.core.cli.annotations;
++
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.lang.annotation.Target;
++
++@Retention(RetentionPolicy.RUNTIME)
++@Target({ ElementType.TYPE })
++public @interface GeowaveCommandSection {
++	String name();
++	String parentSection() default "";
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePlugin.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePlugin.java
+new file mode 100644
+index 0000000..bad049d
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePlugin.java
+@@ -0,0 +1,12 @@
++package mil.nga.giat.geowave.core.cli.annotations;
++
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.lang.annotation.Target;
++
++@Retention(RetentionPolicy.RUNTIME)
++@Target({ ElementType.FIELD })
++public @interface GeowavePlugin {
++	String[] qualifiers() default {};
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePluginFactory.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePluginFactory.java
+new file mode 100644
+index 0000000..04c719d
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/GeowavePluginFactory.java
+@@ -0,0 +1,12 @@
++package mil.nga.giat.geowave.core.cli.annotations;
++
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.lang.annotation.Target;
++
++@Retention(RetentionPolicy.RUNTIME)
++@Target({ ElementType.TYPE })
++public @interface GeowavePluginFactory {
++	String[] qualifiers() default {};
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PluginParameter.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PluginParameter.java
+new file mode 100644
+index 0000000..0fc0a0b
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PluginParameter.java
+@@ -0,0 +1,12 @@
++package mil.nga.giat.geowave.core.cli.annotations;
++
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.lang.annotation.Target;
++
++@Retention(RetentionPolicy.RUNTIME)
++@Target({ ElementType.FIELD })
++public @interface PluginParameter {
++	String[] names() default {};
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PrefixParameter.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PrefixParameter.java
+new file mode 100644
+index 0000000..0b93de6
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/annotations/PrefixParameter.java
+@@ -0,0 +1,12 @@
++package mil.nga.giat.geowave.core.cli.annotations;
++
++import java.lang.annotation.ElementType;
++import java.lang.annotation.Retention;
++import java.lang.annotation.RetentionPolicy;
++import java.lang.annotation.Target;
++
++@Retention(RetentionPolicy.RUNTIME)
++@Target({ ElementType.FIELD })
++public @interface PrefixParameter {
++	String prefix();
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Command.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Command.java
+new file mode 100644
+index 0000000..cd92294
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Command.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.cli.api;
++
++public interface Command {
++	void execute();
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/PluginFactory.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/PluginFactory.java
+new file mode 100644
+index 0000000..eb620a8
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/PluginFactory.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.cli.api;
++
++public interface PluginFactory<T> {
++	T create();
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Section.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Section.java
+new file mode 100644
+index 0000000..d07c348
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/api/Section.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.cli.api;
++
++public interface Section {
++	boolean prepare();
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleCommand.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleCommand.java
+new file mode 100644
+index 0000000..c49d02a
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleCommand.java
+@@ -0,0 +1,19 @@
++package mil.nga.giat.geowave.core.cli.example;
++
++import com.beust.jcommander.Parameter;
++
++import mil.nga.giat.geowave.core.cli.annotations.GeowaveCommand;
++import mil.nga.giat.geowave.core.cli.api.Command;
++
++@GeowaveCommand(name = "example", parentSection = "example")
++public class ExampleCommand implements Command {
++
++	@Parameter(names = "-ex-on")
++	private String exOn;
++	
++	@Override
++	public void execute() {
++		System.out.println(exOn);
++	}
++
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExamplePluginFactory.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExamplePluginFactory.java
+new file mode 100644
+index 0000000..a10baa7
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExamplePluginFactory.java
+@@ -0,0 +1,61 @@
++package mil.nga.giat.geowave.core.cli.example;
++
++import com.beust.jcommander.Parameter;
++
++import mil.nga.giat.geowave.core.cli.annotations.GeowavePluginFactory;
++import mil.nga.giat.geowave.core.cli.api.PluginFactory;
++import mil.nga.giat.geowave.core.store.CloseableIterator;
++import mil.nga.giat.geowave.core.store.DataStore;
++import mil.nga.giat.geowave.core.store.IndexWriter;
++import mil.nga.giat.geowave.core.store.data.VisibilityWriter;
++import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
++import mil.nga.giat.geowave.core.store.query.Query;
++import mil.nga.giat.geowave.core.store.query.QueryOptions;
++
++@GeowavePluginFactory(qualifiers = "accumulo")
++public class ExamplePluginFactory implements PluginFactory<DataStore> {
++
++	@Parameter(names = "-opt")
++	private String opt;
++
++	public DataStore create() {
++		return new Blah();
++	}
++
++	public class Blah implements DataStore {
++
++		@Override
++		public <T> IndexWriter createIndexWriter(PrimaryIndex index, VisibilityWriter<T> customFieldVisibilityWriter) {
++			// TODO Auto-generated method stub
++			return null;
++		}
++
++		@Override
++		public <T> CloseableIterator<T> query(QueryOptions queryOptions, Query query) {
++			System.out.println("Called Query");
++			// TODO Auto-generated method stub
++			return null;
++		}
++
++		@Override
++		public boolean delete(QueryOptions queryOptions, Query query) {
++			// TODO Auto-generated method stub
++			return false;
++		}
++		
++	}
++	
++	
++//	public String get(Class<String> clz, StringOptions options) {
++//		return "A value";
++//	}
++	
++//	public class StringOptions {
++//		@Parameter(names = "-opt")
++//		private String opt;
++//		public String getOpt() {
++//			return opt;
++//		}
++//	}
++	
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleSection.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleSection.java
+new file mode 100644
+index 0000000..df4fa72
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/ExampleSection.java
+@@ -0,0 +1,30 @@
++package mil.nga.giat.geowave.core.cli.example;
++
++import com.beust.jcommander.Parameter;
++import com.beust.jcommander.Parameters;
++
++import mil.nga.giat.geowave.core.cli.annotations.GeowaveCommandSection;
++import mil.nga.giat.geowave.core.cli.api.Section;
++
++@GeowaveCommandSection(name = "example")
++@Parameters(commandDescription = "This is an example section.")
++public class ExampleSection implements Section {
++
++	@Parameter(names = "-ds")
++	private String dsParam;
++	
++	@Parameter(names = "-l")
++	private Boolean listFormats;
++	
++	@Override
++	public boolean prepare() {
++		// Stuff that needs to happen to prepare for execution of command.  Like init
++		// datastore or setup datastore to pass to command
++		if (listFormats) {
++			System.out.println("Listing formats");
++			return false;
++		}
++		return true;
++	}
++
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/Main.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/Main.java
+new file mode 100644
+index 0000000..94f6c3f
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/example/Main.java
+@@ -0,0 +1,216 @@
++package mil.nga.giat.geowave.core.cli.example;
++
++public class Main {
++
++	public static void main(String[] args) {
++		
++	}
++	
++	
++	public static void main1(String[] args) {
++
++		// For Resolution:
++		// - if @Plugin is used in two places, only add 1 new object to get the parameters, and use for both, UNLESS
++		//   they have differen Prefixes / addresses
++		
++		// - There is a difference between cli-address and object-address... needs to be represented in the mapping
++		//   somehow to determine if we can re-use command line options between two plugins
++		
++		// - There are two types of things we're doing:
++		/*
++		     - CLI
++		     - Plugins
++		     
++		     
++		     - CLI
++		       - Allow prefixed command line options
++		       - Allow "plugin" command line options, that specify new options that need to be specified if they're set
++		       - Allow plugin sections/commands
++		       
++		     - Plugins
++		       - Allow plugin factories
++		       - Allow factories to be qualified with a string of keywords
++		       - If no instance exists in the database, and there are no qualifiers specified, and there is a factory with
++		         empty qualifiers, then i'd kinda like to create one
++		         - If there's only one type match in the DB, and I don't specify qualifiers, then take that one
++		       - Return the item with the exact match for qualifiers if it exists, error if it does not
++		       
++		       
++		     1. This is complicated because we need to process CLI to know what our qualifiers are
++		     2. Then we have to create instances of PluginFactory objects based on the qualifiers
++		     3. Then we have to inject those items into the @Plugin locations
++		     4. Then we have to process CLI again to get arguments
++		  
++		  
++		        --> So CLI is weird because I actually want to get the plugin factory itself (instance) in order to populate it with
++		            options via the command line, whereas with normal plugin users, i would probably just 
++		        
++		        
++		     factory = getFactory(Class<T>, String[] qualifiers) -> PluginFactory<T>
++		     factory.set ... (options)
++		     factory.create();
++			   --> So you can inject the Factory, List of Factory, or Object, List of Object.
++
++		       
++		       --> Need another class that can use JCommander to populate objects in general from a parameter list, so basically:
++		           optionResolver.resolve(args, object) // can take a command line - like object
++		           or 
++		           optionResolver.resolve(properties, object) // can take java properties object
++		           
++		       
++		        
++
++			 1. This is complicated in addition for operations, because operations have parent sections, which can have
++			    options that guide the execution of the program in general and not be specific to the command at all.
++			    ^ this is the one that I haven't reconciled yet.
++			    
++			    --> prepare(sectionResolver) / return true/false for prepared or not
++			 
++		
++		
++		
++		
++		
++		
++		*/
++		
++		// Create OperationFactoryRegistry
++		// Add Sections/Commands to OperationRegistry (indexed by parent name, Map<>) via SPI
++		// Error on duplicate section or command names
++		// sectionResolver.get(Section.class)
++
++		// Create PluginFactoryRegistry
++		// Add objects to PluginFactoryRegistry (indexed by name(s), Map<Class<?>>) via SPI
++		// Error on duplicate factory names
++		// pluginResolver.get(DataType.class, String[] qualifiers)
++	
++		// Use JCommander to find the sections and commands with unknown options set to enabled
++		// Need to re-parse over and over, adding the next found command/section to the jcommander object
++		// until we can't find another (via OperationRegistry)
++
++		// Get sections + command objects from OperationRegistry relevant to parsed command		
++		// Create a map for @PrefixParameter, @PluginParameter and all child @Parameter objects (parse entire 
++		// object hierarchy to get all @Parameters, etc)
++		//   For PluginParameter, need to keep the @Plugin variable type (whether it's list, set and the raw 
++		//   type), as well as the @Plugin qualifiers (if any)
++
++		// For @PluginParameter instances
++		// Create a new object with @Parameter string for each @Plugin instance in the list, processing @ParameterPrefix as necessary
++		// Call Parse() on JCommander, with unknown options set to true
++		
++		// Using the value from the plugin parameter's @Parameter above, and the type of the object that was originally
++		// passed in, and qualifiers on the @Plugin itself?, create an instance of the pluginfactory and add it to the
++		// pluginresolver?
++
++
++		
++		
++		
++		// Execute @Plugin resolution
++		
++		
++		// -- So normally, you would manually pre-populate the pluginfactoryregistry with the desired plugins
++		//  I still want some sort of qualifer...
++
++		
++		// Find @Plugin instances, aggregate them into a list
++
++		// For each @Plugin parameter parsed above, create new instance of matching PluginFactory and add to list
++		
++		// For all sections + command objects + pluginfactory objects
++		// Create duplicate javassist classes for each object, processing @ParameterPrefix as necessary
++		
++		
++		
++		// Create duplicate javassist classes for each object, processing @ParameterPrefix as necessary
++		// Create new @Parameter objects (String) for plugins to capture their config
++		// Add all objects to JCommander instance via addObject()
++		// Call Parse() on JCommander, with unknown
++
++		// 
++		
++		
++		// Create PluginResolver from/with plugin factory registry.				
++		// Use PluginResolver.resolve to resolve factories specific to @Plugin instances in objects
++
++
++		
++		// Call Parse() on JCommander
++		
++		
++		// For each section (in order), 
++
++		
++		
++		
++		
++		
++		// ---------------------------------------------
++		
++		
++		
++		// Create OperationRegistry
++		// Add Sections/Commands to OperationRegistry (indexed by parent name, Map<>) via SPI
++		// Error on duplicate section or command names
++
++		// Create PluginFactoryRegistry
++		// Add objects to PluginFactoryRegistry (indexed by name(s), Map<Class<?>>) via SPI
++		// Error on duplicate factory names
++	
++		// Use JCommander to find the sections and commands with unknown options set to enabled
++		// Using a special object that takes no actual options, but just evaluates the main parameters
++		// (doesn't actually use commands)
++
++		// Get sections + command objects from OperationRegistry relevant to parsed command		
++		// Create a map for @PrefixParameter, @PluginParameter and all child @Parameter objects (parse entire object hierarchy to get all @Parameters, etc)
++		//   For PluginParameter, need to keep the @Plugin variable type (whether it's list, set and the raw type), as well as the @Plugin qualifer
++
++		// For @PluginParameter instances
++		// Create a new object with @Parameter string for each @Plugin instance in the list, processing @ParameterPrefix as necessary
++		// Call Parse() on JCommander, with unknown options set to true
++		
++		// Using the value from the @Parameter above, and the type of the object that was originally 
++		
++		// -- So normally, you would manually pre-populate the pluginfactoryregistry with the desired plugins
++		//  I still want some sort of qualifer...
++
++		
++		// Find @Plugin instances, aggregate them into a list
++
++		// For each @Plugin parameter parsed above, create new instance of matching PluginFactory and add to list
++		
++		// For all sections + command objects + pluginfactory objects
++		// Create duplicate javassist classes for each object, processing @ParameterPrefix as necessary
++		
++		
++		
++		// Create duplicate javassist classes for each object, processing @ParameterPrefix as necessary
++		// Create new @Parameter objects (String) for plugins to capture their config
++		// Add all objects to JCommander instance via addObject()
++		// Call Parse() on JCommander, with unknown
++
++		// 
++		
++		
++		// Create PluginResolver from/with plugin factory registry.				
++		// Use PluginResolver.resolve to resolve factories specific to @Plugin instances in objects
++
++
++		
++		// Call Parse() on JCommander
++		
++		
++		// For each section (in order), 
++		//
++		//execute prepare()
++		// Execute 'execute()' on command
++		
++		
++		
++		
++		
++		
++		
++	}
++	
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/OperationRegistry.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/OperationRegistry.java
+new file mode 100644
+index 0000000..680ac67
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/OperationRegistry.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.cli.spi;
++
++public class OperationRegistry {
++
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginParser.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginParser.java
+new file mode 100644
+index 0000000..7f43735
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginParser.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.cli.spi;
++
++public class PluginParser {
++
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginRegistry.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginRegistry.java
+new file mode 100644
+index 0000000..83c1764
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/cli/spi/PluginRegistry.java
+@@ -0,0 +1,63 @@
++package mil.nga.giat.geowave.core.cli.spi;
++
++import java.lang.reflect.ParameterizedType;
++import java.lang.reflect.Type;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.Iterator;
++import java.util.List;
++import java.util.Map;
++import java.util.ServiceLoader;
++
++import mil.nga.giat.geowave.core.cli.api.PluginFactory;
++
++public class PluginRegistry {
++
++	private Map<String, PluginFactory<?>> factoryMap = null;
++	
++	@SuppressWarnings("rawtypes")
++	private synchronized void init() {
++		if (factoryMap == null) {
++			factoryMap = new HashMap<String, PluginFactory<?>>();
++			
++			// Load SPI elements
++			final Iterator<PluginFactory> pluginProviders = ServiceLoader.load(PluginFactory.class).iterator();
++			while (pluginProviders.hasNext()) {
++				final PluginFactory<?> pluginProvider = pluginProviders.next();
++				
++				Class<?> genericType = getGenericType(pluginProvider);
++				
++				
++				/*
++				pluginProviderRegistry.put(
++						ConfigUtils.cleanOptionName(pluginProvider.getIngestFormatName()),
++						pluginProvider);
++						*/
++			}			
++		}
++	}
++	
++	private Class<?> getGenericType(Class<?> clz) {
++		Type genericClass = clz.getGenericInterfaces()[0];
++		ParameterizedType gcP = (ParameterizedType)genericClass;
++		Type tp = gcP.getActualTypeArguments()[0];
++		return (Class<?>)tp;
++	}
++	
++
++	private String getFactoryMapIndex(Class<?> clz, String[] qualifiers) {
++		List<String> qualifierList = Arrays.asList(qualifiers);
++		Collections.sort(qualifierList);
++		
++	}
++	
++	public <T> PluginFactory<T> get(Class<T> clz, String[] qualifiers) {
++		if (factoryMap == null) {
++			init();
++		}
++		return null;
++	}
++	
++	
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/something/CommandLineProcessor.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/something/CommandLineProcessor.java
+new file mode 100644
+index 0000000..77b2e36
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/something/CommandLineProcessor.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.something;
++
++public class CommandLineProcessor {
++
++}
+diff --git a/core/cli/src/main/java/mil/nga/giat/geowave/core/something/OptionResolver.java b/core/cli/src/main/java/mil/nga/giat/geowave/core/something/OptionResolver.java
+new file mode 100644
+index 0000000..9f6b452
+--- /dev/null
++++ b/core/cli/src/main/java/mil/nga/giat/geowave/core/something/OptionResolver.java
+@@ -0,0 +1,5 @@
++package mil.nga.giat.geowave.core.something;
++
++public class OptionResolver {
++
++}
+-- 
+1.9.5.msysgit.0
+
